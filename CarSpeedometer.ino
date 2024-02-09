@@ -1,5 +1,9 @@
 #include "Arduino_LED_Matrix.h"
 
+const int SW_pin = 2;
+const int X_pin = 0;
+const int Y_pin = 1;
+
 ArduinoLEDMatrix matrix;
 
 int x = 0;
@@ -22,10 +26,13 @@ byte frame[8][12] = {
 void setup() {
   Serial.begin(115200);
   matrix.begin();
- 
+   
+  pinMode(SW_pin, INPUT);
+  digitalWrite(SW_pin, HIGH);
 }
 
 void loop() {
+  delay(100);
   /*
   byte frame[8][12] = {
     {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -40,51 +47,49 @@ void loop() {
   };
   matrix.renderBitmap(frame, 8, 12);
   */
-  if(Serial.available() > 0)
-  {    
-    char byte = Serial.read();
-    Serial.println(byte);
 
-    oldX = x;
-    oldY = y;
+  Serial.print("X-axis: ");
+  Serial.println(analogRead(X_pin));
 
-    if(byte == 'L' && y > 0)
-    {
-      y--;
-    }
-    if(byte == 'R' && y < 11)
-    {
-      y++;
-    }
-    if(byte == 'U' && x > 0)
-    {
-      x--;
-    }
-    if(byte == 'D' && x < 7)
-    {
-      x++;
-    }
+  Serial.print("Y-axis: ");
+  Serial.println(analogRead(Y_pin));
 
-    if(byte == 'F')
-    {
-      for(int intY = 0; intY < 13; intY++)
-      {
-        for(int intX = 0; intX < 8; intX++)
-        {
-          frame[intX][intY] = 1;
-        }
+  oldX = x;
+  oldY = y;
 
-      }
-    }
-
-    Serial.println(y);
-    Serial.println(x);
-
-    frame[oldX][oldY] = 0;
-    frame[x][y] = 1;
-
-    matrix.renderBitmap(frame, 8, 12);
+  if(analogRead(X_pin) < 50 && x > 0)
+  {
+    x--;
+  }
+  if(analogRead(X_pin) > 1000 && x < 11)
+  {
+    x++;
+  }
+  if(analogRead(Y_pin) < 50 && y > 0)
+  {
+    y--;
+  }
+  if(analogRead(Y_pin) > 1000 && y < 7)
+  {
+    y++;
   }
   
+  if(digitalRead(SW_pin))
+  {
+    for(int intX = 0; intX < 13; intX++)
+    {
+      for(int intY = 0; intY < 8; intY++)
+      {
+        frame[intY][intX] = 1;
+      }
+
+    }
+  }
+
+
+  frame[oldY][oldX] = 0;
+  frame[y][x] = 1;
+
+  matrix.renderBitmap(frame, 8, 12); 
 
 }
