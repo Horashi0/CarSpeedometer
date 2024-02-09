@@ -44,7 +44,7 @@ void loop() {
   {    
     char byte = Serial.read();
     Serial.println(byte);
-    
+
     oldX = x;
     oldY = y;
 
@@ -63,6 +63,18 @@ void loop() {
     if(byte == 'D' && x < 7)
     {
       x++;
+    }
+
+    if(byte == 'F')
+    {
+      for(int intY = 0; intY < 13; intY++)
+      {
+        for(int intX = 0; intX < 8; intX++)
+        {
+          frame[intX][intY] = 1;
+        }
+
+      }
     }
 
     Serial.println(y);
