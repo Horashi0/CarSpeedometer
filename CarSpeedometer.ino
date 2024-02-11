@@ -10,6 +10,12 @@ int x = 0;
 int y = 0;
 int oldX = 0;
 int oldY = 0;
+int appleStatus = 0;
+int randY = 0;
+int randX = 0;
+int score = 1;
+
+
 
 byte frame[8][12] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -32,27 +38,19 @@ void setup() {
 }
 
 void loop() {
-  delay(100);
-  /*
-  byte frame[8][12] = {
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  delay(150);
 
-    {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-    {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-    {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-    {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-    {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-    {0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-  };
-  matrix.renderBitmap(frame, 8, 12);
-  */
+  Apple();
+
+  /*
+  Debug print out
 
   Serial.print("X-axis: ");
   Serial.println(analogRead(X_pin));
 
   Serial.print("Y-axis: ");
   Serial.println(analogRead(Y_pin));
+  */
 
   oldX = x;
   oldY = y;
@@ -73,23 +71,32 @@ void loop() {
   {
     y++;
   }
-  
-  if(digitalRead(SW_pin))
-  {
-    for(int intX = 0; intX < 13; intX++)
-    {
-      for(int intY = 0; intY < 8; intY++)
-      {
-        frame[intY][intX] = 1;
-      }
-
-    }
-  }
-
 
   frame[oldY][oldX] = 0;
   frame[y][x] = 1;
 
   matrix.renderBitmap(frame, 8, 12); 
+}
 
+void Apple()
+{
+  if(appleStatus == 0)
+  {
+    randY = random(0,7);
+    randX = random(0,11);
+
+    frame[randY][randX] = 1;
+    appleStatus = 1;
+  }
+
+  if(frame[randY][randX] == 0)
+  {
+    score++;
+    appleStatus = 0;
+  }
+}
+
+void SnakeLength()
+{
+  
 }
