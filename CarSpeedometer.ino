@@ -8,13 +8,13 @@ ArduinoLEDMatrix matrix;
 
 int x = 0;
 int y = 0;
-int oldX = 0;
-int oldY = 0;
 int appleStatus = 0;
-int randY = 0;
-int randX = 0;
-int score = 1;
 
+int score = 1;
+int length = 0;
+int randY, randX = 0;
+int ArrayIndex = 0;
+int oldX, oldY = 0;
 
 
 byte frame[8][12] = {
@@ -29,6 +29,9 @@ byte frame[8][12] = {
   {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
+int PositioningArray[50];
+
+
 void setup() {
   Serial.begin(115200);
   matrix.begin();
@@ -41,7 +44,6 @@ void loop() {
   delay(150);
 
   Apple();
-
   /*
   Debug print out
 
@@ -72,10 +74,7 @@ void loop() {
     y++;
   }
 
-  frame[oldY][oldX] = 0;
-  frame[y][x] = 1;
-
-  matrix.renderBitmap(frame, 8, 12); 
+  SnakeLength();
 }
 
 void Apple()
@@ -97,6 +96,39 @@ void Apple()
 }
 
 void SnakeLength()
-{
+{ 
+  // Only updates when oldY and y etc are different as this function is called thousands of times a second
+
+  // Program works by just iterating the snake along, then if length goes over score it fixes it
+
+  if(oldY != y || oldX != x)
+  {
+    length++;
+    PositioningArray[ArrayIndex] = length;
+    PositioningArray[ArrayIndex + 1] = oldY;
+    PositioningArray[ArrayIndex + 2] = oldX;
+
+    ArrayIndex += 2;
+  }
+  Serial.println(ArrayIndex);
+
+  if(length > score)
+  {
+    // As length is appended to array before the x and y coords this means you can find what length the snake was when the coords were appended
+
+    // This means when length goes over score you can find where scores value is then set the values after to 0
+
+    // But this program only allows snake to go over length by one 
+    for(int i = 0; i < 50; i++)
+    {
+      if(PositioningArray[i] == score)
+      {
+        frame[PositioningArray[i + 1]][PositioningArray[i + 2]] = 0;
+      }
+    }
+  }
+
+  frame[y][x] = 1;
   
+  matrix.renderBitmap(frame, 8, 12); 
 }
