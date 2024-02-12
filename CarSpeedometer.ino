@@ -11,7 +11,7 @@ int y = 0;
 int appleStatus = 0;
 
 int score = 1;
-int length = 0;
+int length = 1;
 int randY, randX = 0;
 int ArrayIndex = 0;
 int oldX, oldY = 0;
@@ -35,6 +35,12 @@ int PositioningArray[50];
 void setup() {
   Serial.begin(115200);
   matrix.begin();
+
+  PositioningArray[ArrayIndex] = 1;
+  PositioningArray[ArrayIndex + 1] = 0;
+  PositioningArray[ArrayIndex + 2] = 0;
+  ArrayIndex += 3;
+
    
   pinMode(SW_pin, INPUT);
   digitalWrite(SW_pin, HIGH);
@@ -105,12 +111,11 @@ void SnakeLength()
   {
     length++;
     PositioningArray[ArrayIndex] = length;
-    PositioningArray[ArrayIndex + 1] = oldY;
-    PositioningArray[ArrayIndex + 2] = oldX;
+    PositioningArray[ArrayIndex + 1] = y;
+    PositioningArray[ArrayIndex + 2] = x;
 
-    ArrayIndex += 2;
+    ArrayIndex += 3;
   }
-  Serial.println(ArrayIndex);
 
   if(length > score)
   {
@@ -118,14 +123,23 @@ void SnakeLength()
 
     // This means when length goes over score you can find where scores value is then set the values after to 0
 
-    // But this program only allows snake to go over length by one 
+    // But this program only allows snake to go over length by one
     for(int i = 0; i < 50; i++)
     {
-      if(PositioningArray[i] == score)
+      if(PositioningArray[i] == score) 
       {
         frame[PositioningArray[i + 1]][PositioningArray[i + 2]] = 0;
+        length--;
+        break;
       }
     }
+
+    // Need to resort array now that its out of order/messed up
+    for(int i = 3; i < 50; i++)
+    {
+      PositioningArray[i - 3] = PositioningArray[i];
+    }
+    ArrayIndex = 0;
   }
 
   frame[y][x] = 1;
