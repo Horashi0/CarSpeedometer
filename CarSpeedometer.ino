@@ -103,6 +103,9 @@ void Apple()
 
 void SnakeLength()
 { 
+
+  int lengthUpdate = 1;
+
   // Only updates when oldY and y etc are different as this function is called thousands of times a second
 
   // Program works by just iterating the snake along, then if length goes over score it fixes it
@@ -139,7 +142,16 @@ void SnakeLength()
     {
       PositioningArray[i - 3] = PositioningArray[i];
     }
-    ArrayIndex = 0;
+    ArrayIndex = 3;
+
+    for(int i = 0; i < 50; i += 3)
+    {
+      Serial.print("Array: ");
+      PositioningArray[i] = lengthUpdate;
+      Serial.println(PositioningArray[i]);
+      lengthUpdate++;
+    }
+
   }
 
   frame[y][x] = 1;
