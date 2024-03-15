@@ -31,58 +31,6 @@ byte frame[8][12] = {
 
 int PositioningArray[50];
 
-
-void setup() {
-  Serial.begin(115200);
-  matrix.begin();
-
-  PositioningArray[ArrayIndex] = 1;
-  PositioningArray[ArrayIndex + 1] = 0;
-  PositioningArray[ArrayIndex + 2] = 0;
-  ArrayIndex += 3;
-
-   
-  pinMode(SW_pin, INPUT);
-  digitalWrite(SW_pin, HIGH);
-}
-
-void loop() {
-  delay(150);
-
-  Apple();
-  /*
-  Debug print out
-
-  Serial.print("X-axis: ");
-  Serial.println(analogRead(X_pin));
-
-  Serial.print("Y-axis: ");
-  Serial.println(analogRead(Y_pin));
-  */
-
-  oldX = x;
-  oldY = y;
-
-  if(analogRead(X_pin) < 50 && x > 0)
-  {
-    x--;
-  }
-  if(analogRead(X_pin) > 1000 && x < 11)
-  {
-    x++;
-  }
-  if(analogRead(Y_pin) < 50 && y > 0)
-  {
-    y--;
-  }
-  if(analogRead(Y_pin) > 1000 && y < 7)
-  {
-    y++;
-  }
-
-  SnakeLength();
-}
-
 void Apple()
 {
   if(appleStatus == 0)
@@ -158,3 +106,55 @@ void SnakeLength()
   
   matrix.renderBitmap(frame, 8, 12); 
 }
+
+void snakeSetup() {
+  Serial.begin(115200);
+  matrix.begin();
+
+  PositioningArray[ArrayIndex] = 1;
+  PositioningArray[ArrayIndex + 1] = 0;
+  PositioningArray[ArrayIndex + 2] = 0;
+  ArrayIndex += 3;
+
+   
+  pinMode(SW_pin, INPUT);
+  digitalWrite(SW_pin, HIGH);
+}
+
+void snakeLoop() {
+  delay(150);
+
+  Apple();
+  /*
+  Debug print out
+
+  Serial.print("X-axis: ");
+  Serial.println(analogRead(X_pin));
+
+  Serial.print("Y-axis: ");
+  Serial.println(analogRead(Y_pin));
+  */
+
+  oldX = x;
+  oldY = y;
+
+  if(analogRead(X_pin) < 50 && x > 0)
+  {
+    x--;
+  }
+  if(analogRead(X_pin) > 1000 && x < 11)
+  {
+    x++;
+  }
+  if(analogRead(Y_pin) < 50 && y > 0)
+  {
+    y--;
+  }
+  if(analogRead(Y_pin) > 1000 && y < 7)
+  {
+    y++;
+  }
+
+  SnakeLength();
+}
+

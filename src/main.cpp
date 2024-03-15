@@ -32,8 +32,6 @@ void loop() {
         messagePos++;
       } else if (nextByte == '\n' || nextByte == '$') {
         Sentence[messagePos] = '\0';
-        printf("%s\n", Sentence);
-
         memset(Sentence, 0, sizeof(Sentence));
         messagePos = 0;
       } else {
