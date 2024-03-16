@@ -11,6 +11,7 @@ const byte txPin = 9;
 SoftwareSerial GpsSerial(rxPin, txPin);
 
 char Sentence[NMEA_BYTE_BUFFER];
+char typeArray[5];
 int MessagePos = 0;
 
 void setup() {
@@ -23,8 +24,20 @@ void setup() {
 }
 
 void loop() {
-	delay(5000);
 	ReceiveNmeaStrings();
+}
+
+char *TypeNmeaString() {
+	char *pSentence = Sentence;
+	pSentence++; // Jump over $
+	
+	for(uint_least8_t i = 0; i < 5; ++i) {
+		typeArray[i] = *pSentence;
+		pSentence++;
+	}
+	typeArray[5] = 0;
+	
+	return typeArray;
 }
 
 bool ValidateNmeaString() {
@@ -33,8 +46,8 @@ bool ValidateNmeaString() {
 	uint_least8_t validCount = 0, decnum = 0, i = 0;
   	uint_least8_t length, rem;
 
-  	char sentenceCopy[80], hexnum[3], tempHexnum[3];;
-	char *start, *end;
+  	char sentenceCopy[80], hexnum[3], tempHexnum[3];
+	char *pStart, *pEnd;
 	char *pSentence = Sentence;
 	
 	// Make a copy of sentence for * check
@@ -64,7 +77,7 @@ bool ValidateNmeaString() {
 	{
     	pSentence = Sentence;
 		++pSentence; // jump over $
-		start = pSentence;
+		pStart = pSentence;
 		strncpy(sentenceCopy, pSentence, sizeof(sentenceCopy));
 		
 		while (1) {
@@ -74,10 +87,10 @@ bool ValidateNmeaString() {
 			pSentence += 1; // Keep jumping until you reach *
 		}
 
-		end = pSentence; // get the end pointer which should be truncated
-		length = (int)(end - start); 
+		pEnd = pSentence; // get the end pointer which should be truncated
+		length = (int)(pEnd - pStart); 
 		sentenceCopy[length] = '\0'; // setting the truncation
-		end++;
+		pEnd++; // Jump over the * so when comparing to the given checksum it doesnt include the * which isnt apart of the checksum value
 		//XOR of all bytes
 		for (int c = 0; c < strlen(sentenceCopy); c++) {
 			decnum ^= sentenceCopy[c];
@@ -109,12 +122,12 @@ bool ValidateNmeaString() {
 		//printf("String: %s\n", Sentence);
 		//printf("Hexnum: %s\n", tempHexnum);
 		//printf("End: %s\n", end);
-		for (int i = 0; i <= (strlen(end)); ++i) {
-			if(*end != tempHexnum[i])
+		for (uint_least8_t i = 0; i <= (strlen(pEnd)); ++i) {
+			if(*pEnd != tempHexnum[i])
 			{
 				return 0;
 			}
-			end++;
+			pEnd++;
 		}
 		validCount++;
 	}
@@ -128,12 +141,17 @@ bool ValidateNmeaString() {
 }
 
 void ProcessNmeaString() {
+	char *pType;
 	if (ValidateNmeaString() == 0) {
 		puts("Nmea string is not valid\n");
 	} else {
-		puts(Sentence);
+		pType = TypeNmeaString();
+		// check for type, call handlers, handlers parse and put into place, returns, 
+
+		if (strncmp(pType, "GPGGA", 5) == 0) {
+			puts(Sentence);
+		}
 	}
-	return;
 }
 
 void ReceiveNmeaStrings()
@@ -149,6 +167,7 @@ void ReceiveNmeaStrings()
 			} else if (nextByte == '\n' || nextByte == '$') {
 				Sentence[MessagePos] = '\0';
 				ProcessNmeaString();
+
 				memset(Sentence, 0, sizeof(Sentence));
 				MessagePos = 0;
 			} else {
