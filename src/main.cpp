@@ -14,8 +14,8 @@ const byte txPin = 9;
 SoftwareSerial GpsSerial(rxPin, txPin);
 
 char Sentence[NMEA_BYTE_BUFFER];
-char typeArray[5];
-int MessagePos = 0;
+char typeArray[5], tempHexnum[3];
+int MessagePos = 0, loopCount;
 
 GPGGA *GpggaStruct;
 GPRMC *GprmcStruct;
@@ -31,16 +31,88 @@ void setup() {
 
 void loop() {
 	ReceiveNmeaStrings();
+	delay(500);
 }
 
-void GpggaStructHandler() {
+
+int GpggaStructHandler() {
+	char* placeholder;
+
+	ParseNmeaString();
+
+	puts(Sentence);
+
+	
+	return 0;
+}
+
+int GprmcStructHandler() {
 
 }
 
-void GprmcStructHandler() {
-
+int ResetArray()
+{
+	for (int i = 0; i <= loopCount; i++)
+	{
+		memset(GpsArray[i].item, 0, sizeof(GpsArray[i].item));
+	}
+	loopCount = 0;
+	return 0;
 }
+int ParseNmeaString()
+{
+	ResetArray();
 
+	char sentenceCopy[80];
+	char *start, *end; // start and end value of data slice
+	char *placeholder; // Holds value of &GpsArray[i]
+	char *pSentence = Sentence;
+	int length; // length of data slice to put into array 
+	
+	loopCount = 0;
+	
+	while (1)
+	{
+		// Start loop
+		while (1)
+		{
+			if (*pSentence == ',' || *pSentence == '*' || *pSentence == '$')
+			{
+				pSentence++; // jump over , or $
+				break;
+			}
+			pSentence++; // Keep jumping until you reach ,
+		}
+
+		strncpy(sentenceCopy, pSentence, sizeof(sentenceCopy));
+		start = pSentence;
+
+		// End loop
+		while (1)
+		{
+			if (*pSentence == ',' || *pSentence == '\0' || *pSentence == '*')
+			{
+				break;
+			}
+			end = pSentence;
+			pSentence++; // Keep jumping until you reach ,
+		}
+		end = pSentence;
+		length = (int)(end - start); // get the end pointer which should be truncated
+		sentenceCopy[length] = '\0'; // setting the truncation
+
+		// putting parsed data into array
+		memmove((GpsArray + loopCount), sentenceCopy, sizeof(sentenceCopy));
+		placeholder = GpsArray[loopCount].item; // removes warning you get when putting GpsArray[i].item into printf
+		printf("Value: %d, %s\n", loopCount, placeholder);
+		
+		loopCount++;
+		if (strncmp(placeholder, tempHexnum, 2) == 0) {
+			return 0;
+		}
+	}
+	return 0;
+}
 
 char *TypeNmeaString() {
 	char *pSentence = Sentence;
@@ -61,7 +133,7 @@ bool ValidateNmeaString() {
 	uint_least8_t validCount = 0, decnum = 0, i = 0;
   	uint_least8_t length, rem;
 
-  	char sentenceCopy[80], hexnum[3], tempHexnum[3];
+  	char sentenceCopy[80], hexnum[3];
 	char *pStart, *pEnd;
 	char *pSentence = Sentence;
 	
@@ -155,7 +227,7 @@ bool ValidateNmeaString() {
 	}
 }
 
-void ProcessNmeaString() {
+int ProcessNmeaString() {
 	char *pType;
 	if (ValidateNmeaString() == 0) {
 		puts("Nmea string is not valid\n");
@@ -164,15 +236,18 @@ void ProcessNmeaString() {
 		// check for type, call handlers, handlers parse and put into place, returns, 
 
 		if (strncmp(pType, "GPGGA", 5) == 0) {
-			puts(Sentence);
+			//puts(Sentence);
+			GpggaStructHandler();
 		}
 		if (strncmp(pType, "GPRMC", 5) == 0) {
-			puts(Sentence);
+			//puts(Sentence);
 		}
 	}
+
+	return 0;
 }
 
-void ReceiveNmeaStrings()
+int ReceiveNmeaStrings()
 {
 	while (GpsSerial.available() > 0) {
 		
@@ -197,8 +272,9 @@ void ReceiveNmeaStrings()
 			MessagePos = 0;
 		}
 	}
+	return 0;
 }
-;
+
 // Haversine is an equation that lets you calculate the distance between two points on a sphere aka earth
 double CalculateDistance(double lat1, double long1, double lat2, double long2)
 {

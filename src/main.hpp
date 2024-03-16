@@ -5,9 +5,10 @@ typedef struct
 
 GPS_TEXT_ITEM GpsArray[30];
 
-void GpggaStructHandler();
-void GprmcStructHandler();
+int GpggaStructHandler();
+int GprmcStructHandler();
 bool ValidateNmeaString();
-void ProcessNmeaString();
-void ReceiveNmeaStrings();
+int ProcessNmeaString();
+int ReceiveNmeaStrings();
+int ParseNmeaString();
 double CalculateDistance(double lat1, double long1, double lat2, double long2);
