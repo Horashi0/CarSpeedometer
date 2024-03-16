@@ -2,7 +2,10 @@
 #include <SoftwareSerial.h>
 #include <stdio.h>
 #include <math.h>
+
 #include "main.hpp"
+#include "GPGGA.h"
+#include "GPRMC.h"
 
 #define NMEA_BYTE_BUFFER 128
 
@@ -13,6 +16,9 @@ SoftwareSerial GpsSerial(rxPin, txPin);
 char Sentence[NMEA_BYTE_BUFFER];
 char typeArray[5];
 int MessagePos = 0;
+
+GPGGA *GpggaStruct;
+GPRMC *GprmcStruct;
 
 void setup() {
   Serial.begin(9600);
@@ -26,6 +32,15 @@ void setup() {
 void loop() {
 	ReceiveNmeaStrings();
 }
+
+void GpggaStructHandler() {
+
+}
+
+void GprmcStructHandler() {
+
+}
+
 
 char *TypeNmeaString() {
 	char *pSentence = Sentence;
@@ -151,6 +166,9 @@ void ProcessNmeaString() {
 		if (strncmp(pType, "GPGGA", 5) == 0) {
 			puts(Sentence);
 		}
+		if (strncmp(pType, "GPRMC", 5) == 0) {
+			puts(Sentence);
+		}
 	}
 }
 
@@ -180,9 +198,7 @@ void ReceiveNmeaStrings()
 		}
 	}
 }
-
-
-
+;
 // Haversine is an equation that lets you calculate the distance between two points on a sphere aka earth
 double CalculateDistance(double lat1, double long1, double lat2, double long2)
 {
