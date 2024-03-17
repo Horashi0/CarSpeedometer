@@ -7,15 +7,12 @@
 #include "GPGGA.h"
 #include "GPRMC.h"
 
-#define NMEA_BYTE_BUFFER 128
-
 const byte rxPin = 8;
 const byte txPin = 9;
 SoftwareSerial GpsSerial(rxPin, txPin);
 
 char Sentence[NMEA_BYTE_BUFFER];
-char typeArray[5], tempHexnum[3];
-int MessagePos = 0, loopCount;
+int MessagePos = 0;
 
 GPGGA *GpggaStruct;
 GPRMC *GprmcStruct;
@@ -30,19 +27,68 @@ void setup() {
 }
 
 void loop() {
-	ReceiveNmeaStrings();
 	delay(500);
+	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray);
 }
 
 
-int GpggaStructHandler() {
+int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int loopCount) {
 	char* placeholder;
 
-	ParseNmeaString();
+	ParseNmeaString(sentence, gpsArray, tempHexnum, &loopCount);
 
-	puts(Sentence);
+	int hours, mins, secs;
+	char time[10];             // Holds string of formatted time
+	char timePlaceholder[10];  // Placeholder string for time
+	int integerPlaceholder;    // Placeholder for integer conversion
+	float floatPlaceholder;    // Placeholder for float conversion
 
-	
+	strncpy(GpggaStruct->Id, gpsArray[0].item, sizeof(GpggaStruct->Id));
+
+	//printf("gpsArray: %s\n", gpsArray[0].item);
+	//printf("Struct: %s\n", GpggaStruct->Id);
+
+	strncpy(GpggaStruct->UtcTime, gpsArray[1].item, sizeof(GpggaStruct->UtcTime));
+	int items = sscanf(gpsArray[1].item, "%02u%02u%02u", (unsigned int*)&hours, (unsigned int*)&mins, (unsigned int*)&secs);
+	if (items == 3) {
+		sprintf(time, "%d", hours);
+
+		sprintf(timePlaceholder, ":%d", mins);
+		strncat(time, timePlaceholder, strlen(timePlaceholder));
+		memset(timePlaceholder, 0, 8);
+
+		sprintf(timePlaceholder, ":%d", secs);
+		strncat(time, timePlaceholder, strlen(timePlaceholder));
+
+		strncpy(GpggaStruct->UtcTime, time, sizeof(GpggaStruct->UtcTime));
+	}
+
+	GpggaStruct->Latitude = atof(gpsArray[2].item);
+	strncpy(GpggaStruct->NorthSouth, gpsArray[3].item, sizeof(GpggaStruct->NorthSouth));
+	GpggaStruct->Longitude = atof(gpsArray[4].item);
+	strncpy(GpggaStruct->EastWest, gpsArray[5].item, sizeof(GpggaStruct->EastWest));
+	strncpy(GpggaStruct->FixedField1, gpsArray[10].item, sizeof(GpggaStruct->FixedField1));
+	strncpy(GpggaStruct->FixedField2, gpsArray[12].item, sizeof(GpggaStruct->FixedField2));
+	strncpy(GpggaStruct->DgpsAge, gpsArray[13].item, sizeof(GpggaStruct->DgpsAge));
+	strncpy(GpggaStruct->DgpsStationID, gpsArray[14].item, sizeof(GpggaStruct->DgpsStationID));
+	strncpy(GpggaStruct->CheckSum, gpsArray[15].item, sizeof(GpggaStruct->CheckSum));
+
+	//Integer conversion then assignment to Structure member
+	sscanf(gpsArray[6].item, "%d", &integerPlaceholder);
+	GpggaStruct->FixStatus = integerPlaceholder;
+
+	sscanf(gpsArray[7].item, "%d", &integerPlaceholder);
+	GpggaStruct->Nos = integerPlaceholder;
+
+	sscanf(gpsArray[8].item, "%f", &floatPlaceholder);
+	GpggaStruct->Hdop = floatPlaceholder;
+
+	sscanf(gpsArray[9].item, "%f", &floatPlaceholder);
+	GpggaStruct->Altitude = floatPlaceholder;
+
+	sscanf(gpsArray[11].item, "%f", &floatPlaceholder);
+	GpggaStruct->GeoID = floatPlaceholder;
+
 	return 0;
 }
 
@@ -50,26 +96,23 @@ int GprmcStructHandler() {
 
 }
 
-int ResetArray()
-{
-	for (int i = 0; i <= loopCount; i++)
+int ResetArray(GPS_TEXT_ITEM gpsArray[30], int *pLoopCount) {
+	for (int i = 0; i <= *pLoopCount; i++)
 	{
-		memset(GpsArray[i].item, 0, sizeof(GpsArray[i].item));
+		memset(gpsArray[i].item, 0, sizeof(gpsArray[i].item));
 	}
-	loopCount = 0;
+	*pLoopCount = 0;
 	return 0;
 }
-int ParseNmeaString()
-{
-	ResetArray();
-
+int ParseNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int *pLoopCount) {
+	ResetArray(gpsArray, pLoopCount);
 	char sentenceCopy[80];
 	char *start, *end; // start and end value of data slice
-	char *placeholder; // Holds value of &GpsArray[i]
-	char *pSentence = Sentence;
+	char *placeholder; // Holds value of &gpsArray[i]
+	char *pSentence = sentence;
 	int length; // length of data slice to put into array 
 	
-	loopCount = 0;
+	*pLoopCount = 0;
 	
 	while (1)
 	{
@@ -102,11 +145,10 @@ int ParseNmeaString()
 		sentenceCopy[length] = '\0'; // setting the truncation
 
 		// putting parsed data into array
-		memmove((GpsArray + loopCount), sentenceCopy, sizeof(sentenceCopy));
-		placeholder = GpsArray[loopCount].item; // removes warning you get when putting GpsArray[i].item into printf
-		printf("Value: %d, %s\n", loopCount, placeholder);
-		
-		loopCount++;
+		memmove((gpsArray + *pLoopCount), sentenceCopy, sizeof(sentenceCopy));
+		placeholder = gpsArray[*pLoopCount].item; // removes warning you get when putting gpsArray[i].item into printf
+		//printf("Value: %d, %s\n", loopCount, placeholder);
+		(*pLoopCount)++;
 		if (strncmp(placeholder, tempHexnum, 2) == 0) {
 			return 0;
 		}
@@ -114,38 +156,39 @@ int ParseNmeaString()
 	return 0;
 }
 
-char *TypeNmeaString() {
-	char *pSentence = Sentence;
+int TypeNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pTypeArray) {
+	char *pSentence = sentence;
 	pSentence++; // Jump over $
 	
 	for(uint_least8_t i = 0; i < 5; ++i) {
-		typeArray[i] = *pSentence;
+		*pTypeArray = *pSentence;
 		pSentence++;
+		pTypeArray++;
 	}
-	typeArray[5] = 0;
-	
-	return typeArray;
+	return 0;
 }
 
-bool ValidateNmeaString() {
+bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 	/* validCount is a green light system. Each check will + 1. If the total check value isnt 
 	reached then its presumed a check failed*/
 	uint_least8_t validCount = 0, decnum = 0, i = 0;
   	uint_least8_t length, rem;
 
-  	char sentenceCopy[80], hexnum[3];
+  	char sentenceCopy[NMEA_BYTE_BUFFER], hexnum[3];
 	char *pStart, *pEnd;
-	char *pSentence = Sentence;
+	char *pSentence = sentence;
 	
 	// Make a copy of sentence for * check
-	strncpy(sentenceCopy, Sentence, sizeof(sentenceCopy));
+	strncpy(sentenceCopy, sentence, sizeof(sentenceCopy));
 
 	//checking $ is the first value
+	
 	if (*pSentence == '$') {
 		validCount++;
 	}
 
 	if (validCount == 1) {
+		
 		while (1) {
 			if (*pSentence == '*') {
 				validCount++;
@@ -162,7 +205,7 @@ bool ValidateNmeaString() {
 	// checksum string example: GPGLL,5300.97914,N,00259.98174,E,125926,A
 	if (validCount == 2)
 	{
-    	pSentence = Sentence;
+    	pSentence = sentence;
 		++pSentence; // jump over $
 		pStart = pSentence;
 		strncpy(sentenceCopy, pSentence, sizeof(sentenceCopy));
@@ -203,18 +246,20 @@ bool ValidateNmeaString() {
 		hexnum[2] = 0;
 		
 		// Swap bits around. e.g. hexnum = 07, tempHexnum = 70
-		tempHexnum[0] = hexnum[1];
-		tempHexnum[1] = hexnum[0];
-		tempHexnum[2] = 0;
-		//printf("String: %s\n", Sentence);
-		//printf("Hexnum: %s\n", tempHexnum);
-		//printf("End: %s\n", end);
+		*pHexnum = hexnum[1];
+		pHexnum++;
+		*pHexnum = hexnum[0];
+		pHexnum++;
+		*pHexnum = 0;
+		pHexnum -= 2;
+
 		for (uint_least8_t i = 0; i <= (strlen(pEnd)); ++i) {
-			if(*pEnd != tempHexnum[i])
+			if(*pEnd != *pHexnum)
 			{
 				return 0;
 			}
 			pEnd++;
+			pHexnum++;
 		}
 		validCount++;
 	}
@@ -227,49 +272,51 @@ bool ValidateNmeaString() {
 	}
 }
 
-int ProcessNmeaString() {
-	char *pType;
-	if (ValidateNmeaString() == 0) {
+int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30]) {
+	char tempHexnum[3], typeArray[5];
+	int loopCount;
+	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
 		puts("Nmea string is not valid\n");
 	} else {
-		pType = TypeNmeaString();
+		TypeNmeaString(sentence, typeArray);
+		
 		// check for type, call handlers, handlers parse and put into place, returns, 
 
-		if (strncmp(pType, "GPGGA", 5) == 0) {
-			//puts(Sentence);
-			GpggaStructHandler();
+		if (strncmp(typeArray, "GPGGA", 5) == 0) {
+			puts(sentence);
+			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount);
 		}
-		if (strncmp(pType, "GPRMC", 5) == 0) {
-			//puts(Sentence);
+		if (strncmp(typeArray, "GPRMC", 5) == 0) {
+			//puts(sentence);
 		}
 	}
 
 	return 0;
 }
 
-int ReceiveNmeaStrings()
+int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT_ITEM gpsArray[30])
 {
 	while (GpsSerial.available() > 0) {
 		
 		byte nextByte = GpsSerial.read();
 
 		if ((nextByte >= 32 && nextByte <= 126) || nextByte == '\n' || nextByte == '\r') {
-			if (nextByte != '\n' && (MessagePos < NMEA_BYTE_BUFFER - 1)) {
-				Sentence[MessagePos] = nextByte;
-				MessagePos++;
+			if (nextByte != '\n' && (messagePos < NMEA_BYTE_BUFFER - 1)) {
+				sentence[messagePos] = nextByte;
+				messagePos++;
 			} else if (nextByte == '\n' || nextByte == '$') {
-				Sentence[MessagePos] = '\0';
-				ProcessNmeaString();
+				sentence[messagePos] = '\0';
+				ProcessNmeaString(sentence, gpsArray);
 
-				memset(Sentence, 0, sizeof(Sentence));
-				MessagePos = 0;
+				memset(sentence, 0, sizeof(sentence));
+				messagePos = 0;
 			} else {
-				memset(Sentence, 0, sizeof(Sentence));
-				MessagePos = 0;
+				memset(sentence, 0, sizeof(sentence));
+				messagePos = 0;
 			}
 		} else {
-			memset(Sentence, 0, sizeof(Sentence));
-			MessagePos = 0;
+			memset(sentence, 0, sizeof(sentence));
+			messagePos = 0;
 		}
 	}
 	return 0;
