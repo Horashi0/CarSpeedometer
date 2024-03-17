@@ -28,11 +28,11 @@ void setup() {
 
 void loop() {
 	delay(500);
-	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray);
+	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray, GpggaStruct);
 }
 
 
-int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int loopCount) {
+int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int loopCount, GPGGA* gpggaStruct) {
 	char* placeholder;
 
 	ParseNmeaString(sentence, gpsArray, tempHexnum, &loopCount);
@@ -45,8 +45,8 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 
 	strncpy(GpggaStruct->Id, gpsArray[0].item, sizeof(GpggaStruct->Id));
 
-	//printf("gpsArray: %s\n", gpsArray[0].item);
-	//printf("Struct: %s\n", GpggaStruct->Id);
+	printf("gpsArray: %s\n", gpsArray[0].item);
+	printf("Struct: %s\n", GpggaStruct->Id);
 
 	strncpy(GpggaStruct->UtcTime, gpsArray[1].item, sizeof(GpggaStruct->UtcTime));
 	int items = sscanf(gpsArray[1].item, "%02u%02u%02u", (unsigned int*)&hours, (unsigned int*)&mins, (unsigned int*)&secs);
@@ -272,7 +272,7 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 	}
 }
 
-int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30]) {
+int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
 	char tempHexnum[3], typeArray[5];
 	int loopCount;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
@@ -284,7 +284,7 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 
 		if (strncmp(typeArray, "GPGGA", 5) == 0) {
 			puts(sentence);
-			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount);
+			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount, gpggaStruct);
 		}
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
@@ -294,7 +294,7 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 	return 0;
 }
 
-int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT_ITEM gpsArray[30])
+int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct)
 {
 	while (GpsSerial.available() > 0) {
 		
@@ -306,7 +306,7 @@ int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT
 				messagePos++;
 			} else if (nextByte == '\n' || nextByte == '$') {
 				sentence[messagePos] = '\0';
-				ProcessNmeaString(sentence, gpsArray);
+				ProcessNmeaString(sentence, gpsArray, gpggaStruct);
 
 				memset(sentence, 0, sizeof(sentence));
 				messagePos = 0;
