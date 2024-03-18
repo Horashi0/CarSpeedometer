@@ -2,6 +2,7 @@
 #include <SoftwareSerial.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 #include "main.hpp"
 #include "GPGGA.h"
@@ -27,7 +28,7 @@ void setup() {
 }
 
 void loop() {
-	delay(500);
+	delay(1000);
 	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray, GpggaStruct);
 }
 
@@ -37,11 +38,10 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 
 	ParseNmeaString(sentence, gpsArray, tempHexnum, &loopCount);
 
-	int hours, mins, secs;
-	char time[10];             // Holds string of formatted time
-	char timePlaceholder[10];  // Placeholder string for time
-	int integerPlaceholder;    // Placeholder for integer conversion
-	float floatPlaceholder;    // Placeholder for float conversion
+	int hours, mins, secs, integerPlaceholder; // Placeholder for integer conversion
+	float floatPlaceholder = 0, pLatitude, pLongitude; // Placeholder for float conversion
+	char time[10], timePlaceholder[10]; // Holds string of formatted time, Placeholder string for time
+	  
 
 	strncpy(gpggaStruct->Id, gpsArray[0].item, sizeof(gpggaStruct->Id)); 
 
@@ -59,10 +59,15 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 
 		strncpy(gpggaStruct->UtcTime, time, sizeof(gpggaStruct->UtcTime));
 	}
+	
+	pLatitude = strtod(gpsArray[2].item, NULL);
+	gpggaStruct->Latitude = pLatitude;
 
-	gpggaStruct->Latitude = atof(gpsArray[2].item);
 	strncpy(gpggaStruct->NorthSouth, gpsArray[3].item, sizeof(gpggaStruct->NorthSouth));
-	gpggaStruct->Longitude = atof(gpsArray[4].item);
+	
+	pLongitude = strtod(gpsArray[4].item, NULL);
+	gpggaStruct->Longitude = pLongitude;	
+
 	strncpy(gpggaStruct->EastWest, gpsArray[5].item, sizeof(gpggaStruct->EastWest));
 	strncpy(gpggaStruct->FixedField1, gpsArray[10].item, sizeof(gpggaStruct->FixedField1));
 	strncpy(gpggaStruct->FixedField2, gpsArray[12].item, sizeof(gpggaStruct->FixedField2));
@@ -79,12 +84,18 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 
 	sscanf(gpsArray[8].item, "%f", &floatPlaceholder);
 	gpggaStruct->Hdop = floatPlaceholder;
+	
 
 	sscanf(gpsArray[9].item, "%f", &floatPlaceholder);
 	gpggaStruct->Altitude = floatPlaceholder;
 
 	sscanf(gpsArray[11].item, "%f", &floatPlaceholder);
 	gpggaStruct->GeoID = floatPlaceholder;
+
+	ConvertDecimalDegrees(gpggaStruct->Latitude, gpggaStruct->Longitude, gpggaStruct->NorthSouth, gpggaStruct->EastWest, &pLatitude, &pLongitude);
+	
+	gpggaStruct->DecimalDegreesLatitude = pLatitude;
+	gpggaStruct->DecimalDegreesLongitude = pLongitude;
 
 	return 0;
 }
@@ -261,19 +272,25 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 }
 
 int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
-	char tempHexnum[3], typeArray[5];
+	char tempHexnum[3], typeArray[5], latitude[10], longitude[10];
 	int loopCount;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
-		puts("Nmea string is not valid\n");
+		//puts("Nmea string is not valid\n");
 	} else {
 		TypeNmeaString(sentence, typeArray);
 		
 		// check for type, call handlers, handlers parse and put into place, returns, 
 
 		if (strncmp(typeArray, "GPGGA", 5) == 0) {
-			puts(sentence);
+			//puts(sentence);
+
 			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount, gpggaStruct);
-			printf("Id: %s", gpggaStruct->Id);
+			
+			dtostrf(gpggaStruct->DecimalDegreesLatitude, sizeof(latitude), 4, latitude);
+			dtostrf(gpggaStruct->DecimalDegreesLongitude, sizeof(longitude), 4, longitude);
+			
+			printf("DecimalDegreesLatitude: %s\n", latitude);
+			printf("DecimalDegreesLongitude: %s\n", longitude);
 		}
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
@@ -327,4 +344,41 @@ double CalculateDistance(double lat1, double long1, double lat2, double long2)
 	const double result = earthRadius * value2;
 
 	return result * 1000;
+}
+
+int ConvertDecimalDegrees(float Latitude, float Longitude, char NorthSouth[1], char EastWest[1], float *pLatitude, float *pLongitude) {
+	// e.g. Latitude  04750.000
+	// e.g. Longitude 11711.9258
+
+	unsigned long tmpLat1;
+	unsigned long tmpLong1;
+	double tmpLat2;
+	double tmpLong2;
+
+	*pLatitude=Latitude/100;
+	*pLongitude=Longitude/100;
+
+	tmpLat1=(unsigned long)*pLatitude;
+	tmpLat2=(double)tmpLat1;
+
+	tmpLong1=(unsigned long)*pLongitude;
+	tmpLong2=(double)tmpLong1;
+
+	*pLatitude=*pLatitude-tmpLat2;
+	*pLongitude=*pLongitude - tmpLong2;
+
+	*pLatitude=*pLatitude*100/60;
+	*pLongitude=*pLongitude*100/60;
+
+	*pLatitude=*pLatitude+tmpLat1;
+	*pLongitude=*pLongitude+tmpLong1;
+
+	if (*NorthSouth == 'S') {
+	*pLatitude = -*pLatitude;
+	}
+	if (*EastWest == 'W') {
+	*pLongitude = -*pLongitude;
+	}
+
+	return 0;
 }

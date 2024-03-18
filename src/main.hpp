@@ -18,3 +18,4 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT_ITEM gpsArray[30], GPGGA *GpggaStruct);
 int ParseNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int *pLoopCount);
 double CalculateDistance(double lat1, double long1, double lat2, double long2);
+int ConvertDecimalDegrees(float Latitude, float Longitude, char NorthSouth[1], char EastWest[1], float *pLatitude, float *pLongitude);

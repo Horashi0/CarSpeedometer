@@ -16,8 +16,10 @@ typedef struct
 	char Id[GPGGA_ID_LENGTH+1]; // ID for NMEA string. e.g. GPGGA
 	char UtcTime[GPGGA_UTC_LENGTH + 1]; // UTC timestamp for NMEA string - Time in format ‘hhmmss.sss’ e.g. 135716.174
 	float Latitude; // Latitude for NMEA string - Latitude in format ‘ddmm.mmmm’ (degree and minutes)
+	float DecimalDegreesLatitude; // Converted format of Latitude
 	char NorthSouth[GPGGA_NORTH_SOUTH_LENGTH + 1]; // North/South character for NMEA string - 'N'= North 'S'= South
 	float Longitude; // Longitude for NMEA string - Longitude in format ‘dddmm.mmmm’ (degree and minutes)
+	float DecimalDegreesLongitude; // Converted format of Longitude
 	char EastWest[GPGGA_EAST_WEST_LENGTH + 1]; // East/West character for NMEA string - ‘E’=East ‘W’ = West
 	int FixStatus; // Fix Status for NMEA string - ‘0’=Invalid	 ‘1’ = GPS fix	 ‘2’ = DGPS fix
 	int Nos; // Number of satellites for NMEA string - Number of satellites being used (0~12)
