@@ -276,8 +276,9 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 }
 
 int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
-	char tempHexnum[3], typeArray[5], latitude[10], longitude[10], previousLatitude[10], previousLongitude[10];
+	char tempHexnum[3], typeArray[5], latitude[10], longitude[10], previousLatitude[10], previousLongitude[10], distanceChar[2];
 	int loopCount;
+	double distance = 0;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
 		//puts("Nmea string is not valid\n");
 	} else {
@@ -296,10 +297,13 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 			dtostrf(gpggaStruct->PreviousDecimalDegreesLatitude, sizeof(previousLatitude), 4, previousLatitude);
 			dtostrf(gpggaStruct->PreviousDecimalDegreesLongitude, sizeof(previousLongitude), 4, previousLongitude);
 
-			printf("DecimalDegreesLatitude: %s\n", latitude);
+			/*printf("DecimalDegreesLatitude: %s\n", latitude);
 			printf("DecimalDegreesLongitude: %s\n", longitude);
 			printf("PreviousDecimalDegreesLatitude: %s\n", previousLatitude);
-			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);
+			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);*/
+			distance = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
+			dtostrf(distance, sizeof(distanceChar), 1, distanceChar);
+			printf("Distance: %s\n", distanceChar);
 
 
 		}
