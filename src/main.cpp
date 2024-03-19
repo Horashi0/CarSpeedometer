@@ -36,6 +36,9 @@ void loop() {
 int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int loopCount, GPGGA* gpggaStruct) {
 	char* placeholder;
 
+	gpggaStruct->PreviousDecimalDegreesLatitude = gpggaStruct->DecimalDegreesLatitude;
+	gpggaStruct->PreviousDecimalDegreesLongitude = gpggaStruct->DecimalDegreesLongitude;
+
 	ParseNmeaString(sentence, gpsArray, tempHexnum, &loopCount);
 
 	int hours, mins, secs, integerPlaceholder; // Placeholder for integer conversion
@@ -111,6 +114,7 @@ int ResetArray(GPS_TEXT_ITEM gpsArray[30], int *pLoopCount) {
 	*pLoopCount = 0;
 	return 0;
 }
+
 int ParseNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int *pLoopCount) {
 	ResetArray(gpsArray, pLoopCount);
 	char sentenceCopy[80];
@@ -272,7 +276,7 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 }
 
 int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
-	char tempHexnum[3], typeArray[5], latitude[10], longitude[10];
+	char tempHexnum[3], typeArray[5], latitude[10], longitude[10], previousLatitude[10], previousLongitude[10];
 	int loopCount;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
 		//puts("Nmea string is not valid\n");
@@ -289,8 +293,15 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 			dtostrf(gpggaStruct->DecimalDegreesLatitude, sizeof(latitude), 4, latitude);
 			dtostrf(gpggaStruct->DecimalDegreesLongitude, sizeof(longitude), 4, longitude);
 			
+			dtostrf(gpggaStruct->PreviousDecimalDegreesLatitude, sizeof(previousLatitude), 4, previousLatitude);
+			dtostrf(gpggaStruct->PreviousDecimalDegreesLongitude, sizeof(previousLongitude), 4, previousLongitude);
+
 			printf("DecimalDegreesLatitude: %s\n", latitude);
 			printf("DecimalDegreesLongitude: %s\n", longitude);
+			printf("PreviousDecimalDegreesLatitude: %s\n", previousLatitude);
+			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);
+
+
 		}
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
