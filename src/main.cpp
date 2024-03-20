@@ -83,7 +83,7 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 	strncpy(gpggaStruct->CheckSum, gpsArray[15].item, sizeof(gpggaStruct->CheckSum));
 
 	//Integer conversion then assignment to Structure member
-	/*sscanf(gpsArray[6].item, "%d", &integerPlaceholder);
+	sscanf(gpsArray[6].item, "%d", &integerPlaceholder);
 	gpggaStruct->FixStatus = integerPlaceholder;
 
 	sscanf(gpsArray[7].item, "%d", &integerPlaceholder);
@@ -97,7 +97,7 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 	gpggaStruct->Altitude = floatPlaceholder;
 
 	sscanf(gpsArray[11].item, "%f", &floatPlaceholder);
-	gpggaStruct->GeoID = floatPlaceholder;*/
+	gpggaStruct->GeoID = floatPlaceholder;
 
 	ConvertDecimalDegrees(gpggaStruct->Latitude, gpggaStruct->Longitude, gpggaStruct->NorthSouth, gpggaStruct->EastWest, &pLatitude, &pLongitude);
 	
@@ -284,14 +284,14 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 	int loopCount;
 	double distance = 0;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
-		puts("Nmea string is not valid\n");
+		//puts("Nmea string is not valid\n");
 	} else {
 		TypeNmeaString(sentence, typeArray);
 		
 		// check for type, call handlers, handlers parse and put into place, returns, 
 
 		if (strncmp(typeArray, "GPGGA", 5) == 0) {
-			//puts(sentence);
+			puts(sentence);
 
 			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount, gpggaStruct);
 			
@@ -308,8 +308,6 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 			distance = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
 			dtostrf(distance, sizeof(distanceChar) - 1, 1, distanceChar);
 			printf("Distance: %s\n", distanceChar);
-
-
 		}
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
