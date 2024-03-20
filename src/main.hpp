@@ -3,7 +3,7 @@
 
 typedef struct
 {
-	char	item[20];
+	char	item[30];
 }GPS_TEXT_ITEM;
 
 GPS_TEXT_ITEM GpsArray[30];

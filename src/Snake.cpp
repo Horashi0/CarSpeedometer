@@ -1,5 +1,5 @@
-#include "Arduino_LED_Matrix.h"
-
+//#include "Arduino_LED_Matrix.h"
+/*
 const int SW_pin = 2;
 const int X_pin = 0;
 const int Y_pin = 1;
@@ -125,7 +125,7 @@ void snakeLoop() {
   delay(150);
 
   Apple();
-  /*
+  
   Debug print out
 
   Serial.print("X-axis: ");
@@ -133,7 +133,7 @@ void snakeLoop() {
 
   Serial.print("Y-axis: ");
   Serial.println(analogRead(Y_pin));
-  */
+  
 
   oldX = x;
   oldY = y;
@@ -157,4 +157,4 @@ void snakeLoop() {
 
   SnakeLength();
 }
-
+*/

@@ -8,9 +8,10 @@
 #include "GPGGA.h"
 #include "GPRMC.h"
 
-const byte rxPin = 8;
-const byte txPin = 9;
-SoftwareSerial GpsSerial(rxPin, txPin);
+const byte rxPin = 4;
+const byte txPin = 5;
+
+
 
 char Sentence[NMEA_BYTE_BUFFER];
 int MessagePos = 0;
@@ -19,18 +20,21 @@ GPGGA *GpggaStruct = (GPGGA*)GpsArray[25].item;
 GPRMC *GprmcStruct;
 
 void setup() {
-  Serial.begin(9600);
+	Serial.begin(9600);
+	
 
-  pinMode(rxPin, INPUT);
-  pinMode(txPin, OUTPUT);
-
-  GpsSerial.begin(9600);
+	pinMode(rxPin, INPUT);
+	pinMode(txPin, OUTPUT);
+	Serial2.begin(9600,SERIAL_8N1, rxPin, txPin, false);
 }
 
 void loop() {
 	delay(1000);
+	memset(Sentence, 0, 128);
+	MessagePos = 0;
 	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray, GpggaStruct);
 }
+
 
 
 int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int loopCount, GPGGA* gpggaStruct) {
@@ -79,7 +83,7 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 	strncpy(gpggaStruct->CheckSum, gpsArray[15].item, sizeof(gpggaStruct->CheckSum));
 
 	//Integer conversion then assignment to Structure member
-	sscanf(gpsArray[6].item, "%d", &integerPlaceholder);
+	/*sscanf(gpsArray[6].item, "%d", &integerPlaceholder);
 	gpggaStruct->FixStatus = integerPlaceholder;
 
 	sscanf(gpsArray[7].item, "%d", &integerPlaceholder);
@@ -93,7 +97,7 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 	gpggaStruct->Altitude = floatPlaceholder;
 
 	sscanf(gpsArray[11].item, "%f", &floatPlaceholder);
-	gpggaStruct->GeoID = floatPlaceholder;
+	gpggaStruct->GeoID = floatPlaceholder;*/
 
 	ConvertDecimalDegrees(gpggaStruct->Latitude, gpggaStruct->Longitude, gpggaStruct->NorthSouth, gpggaStruct->EastWest, &pLatitude, &pLongitude);
 	
@@ -276,11 +280,11 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 }
 
 int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
-	char tempHexnum[3], typeArray[5], latitude[10], longitude[10], previousLatitude[10], previousLongitude[10], distanceChar[2];
+	char tempHexnum[4], typeArray[6], latitude[14], longitude[14], previousLatitude[14], previousLongitude[14], distanceChar[2];
 	int loopCount;
 	double distance = 0;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
-		//puts("Nmea string is not valid\n");
+		puts("Nmea string is not valid\n");
 	} else {
 		TypeNmeaString(sentence, typeArray);
 		
@@ -291,18 +295,18 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 
 			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount, gpggaStruct);
 			
-			dtostrf(gpggaStruct->DecimalDegreesLatitude, sizeof(latitude), 4, latitude);
-			dtostrf(gpggaStruct->DecimalDegreesLongitude, sizeof(longitude), 4, longitude);
+			dtostrf((double)gpggaStruct->DecimalDegreesLatitude, sizeof(latitude) - 1, 4, latitude);
+			dtostrf((double)gpggaStruct->DecimalDegreesLongitude, sizeof(longitude) - 1, 4, longitude);
 			
-			dtostrf(gpggaStruct->PreviousDecimalDegreesLatitude, sizeof(previousLatitude), 4, previousLatitude);
-			dtostrf(gpggaStruct->PreviousDecimalDegreesLongitude, sizeof(previousLongitude), 4, previousLongitude);
-
+			dtostrf((double)gpggaStruct->PreviousDecimalDegreesLatitude, sizeof(previousLatitude) - 1, 4, previousLatitude);
+			dtostrf((double)gpggaStruct->PreviousDecimalDegreesLongitude, sizeof(previousLongitude) - 1, 4, previousLongitude);
+			
 			/*printf("DecimalDegreesLatitude: %s\n", latitude);
 			printf("DecimalDegreesLongitude: %s\n", longitude);
 			printf("PreviousDecimalDegreesLatitude: %s\n", previousLatitude);
 			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);*/
 			distance = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
-			dtostrf(distance, sizeof(distanceChar), 1, distanceChar);
+			dtostrf(distance, sizeof(distanceChar) - 1, 1, distanceChar);
 			printf("Distance: %s\n", distanceChar);
 
 
@@ -317,9 +321,9 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 
 int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct)
 {
-	while (GpsSerial.available() > 0) {
+	while (Serial2.available() > 0) {
 		
-		byte nextByte = GpsSerial.read();
+		byte nextByte = Serial2.read();
 
 		if ((nextByte >= 32 && nextByte <= 126) || nextByte == '\n' || nextByte == '\r') {
 			if (nextByte != '\n' && (messagePos < NMEA_BYTE_BUFFER - 1)) {
@@ -327,16 +331,17 @@ int ReceiveNmeaStrings(char sentence[NMEA_BYTE_BUFFER], int messagePos, GPS_TEXT
 				messagePos++;
 			} else if (nextByte == '\n' || nextByte == '$') {
 				sentence[messagePos] = '\0';
+				//printf("Sentence: %s\n", sentence);
 				ProcessNmeaString(sentence, gpsArray, gpggaStruct);
 
-				memset(sentence, 0, sizeof(sentence));
+				memset(sentence, 0, NMEA_BYTE_BUFFER);
 				messagePos = 0;
 			} else {
-				memset(sentence, 0, sizeof(sentence));
+				memset(sentence, 0, NMEA_BYTE_BUFFER);
 				messagePos = 0;
 			}
 		} else {
-			memset(sentence, 0, sizeof(sentence));
+			memset(sentence, 0, NMEA_BYTE_BUFFER);
 			messagePos = 0;
 		}
 	}
