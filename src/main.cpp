@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <LiquidCrystal.h>
+#include <Wire.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -11,7 +13,7 @@
 const byte rxPin = 4;
 const byte txPin = 5;
 
-
+LiquidCrystal lcd(9, 10, 11, 12, 13, 14);
 
 char Sentence[NMEA_BYTE_BUFFER];
 int MessagePos = 0;
@@ -21,6 +23,7 @@ GPRMC *GprmcStruct;
 
 void setup() {
 	Serial.begin(9600);
+	lcd.begin(16,2);
 	
 
 	pinMode(rxPin, INPUT);
@@ -30,8 +33,7 @@ void setup() {
 
 void loop() {
 	delay(1000);
-	memset(Sentence, 0, 128);
-	MessagePos = 0;
+
 	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray, GpggaStruct);
 }
 
@@ -279,10 +281,30 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 	}
 }
 
+int DisplayLcd(float speed, int choice) {
+	// speed is in meters per second
+	// choice means the function returns different speeds, kmph = 0, mph = 1
+	float kmph, mph;
+	char charSpeed[3];
+	dtostrf(speed, sizeof(charSpeed) - 1, 1, charSpeed);
+
+	kmph = ((speed * 60) * 60) / 1000;
+	mph = kmph * 0.621371;
+
+	lcd.clear();
+	lcd.print("Speed: ");
+	lcd.setCursor(7, 0);
+	lcd.print(charSpeed);
+	lcd.setCursor((strlen(charSpeed) + 6), 0);
+	lcd.print("m/s");
+
+	return 0;
+}
+
 int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
-	char tempHexnum[4], typeArray[6], latitude[14], longitude[14], previousLatitude[14], previousLongitude[14], distanceChar[2];
+	char tempHexnum[4], typeArray[6], latitude[14], longitude[14], previousLatitude[14], previousLongitude[14], speedChar[2];
 	int loopCount;
-	double distance = 0;
+	float speed = 0;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
 		//puts("Nmea string is not valid\n");
 	} else {
@@ -305,9 +327,11 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 			printf("DecimalDegreesLongitude: %s\n", longitude);
 			printf("PreviousDecimalDegreesLatitude: %s\n", previousLatitude);
 			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);*/
-			distance = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
-			dtostrf(distance, sizeof(distanceChar) - 1, 1, distanceChar);
-			printf("Distance: %s\n", distanceChar);
+			speed = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
+			dtostrf(speed, sizeof(speedChar) - 1, 1, speedChar);
+			printf("Distance: %s\n", speedChar);
+
+			DisplayLcd(speed, 0);
 		}
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
