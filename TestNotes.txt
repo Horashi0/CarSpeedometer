@@ -1,0 +1,24 @@
+# Debrief
+
+## What went wrong?
+Answer is alot
+- 50% of my journey was not receiving any data from the chip
+- I had to do multiple test runs before leaving house due to unpreparedness 
+- Realising i cant run two serial ports at once
+- LED being really bright and distracting whilst driving at night time
+
+## What went well?
+Data seems good! Once it started working the data seems well which I now need to analyse. 
+
+## Implementation
+- Time, I NEED to implement time stamps. As I have no clue when I am actually printing speed
+- Makefile - Ok I already have one, but its dreadful. Multiple times I had to nano into it and config it. I need to add -h -v commands etc so I can debug on the fly. I also need to add a testing mode
+- Fully flesh out my conversion function as it was badly needed on todays test run as I now have to convert m/s manually
+- Led brightness control as hot dayum that was bright in the car
+- Print out for when no data is being received - Right now I am just printing 0 when I get no data. But I need to print out "Error, no position"
+- Maybe make some error codes? so rather than string codes I just print out the error
+- Make all my computers on the same version of code. Each computer has a different makefile so I need to make everything the same.
+- Version my program, now its semi-working I should version my program so I can iterate on my code whilst making sure all computers are running the same version
+- Storage of test data, I need to use a micro SD card of some kind as printing out to terminal isnt the best
+
+Overall I think it went well, just need to implement all the stuff I mentioned

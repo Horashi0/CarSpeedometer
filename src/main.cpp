@@ -307,6 +307,7 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 	float speed = 0;
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
 		//puts("Nmea string is not valid\n");
+		//puts(sentence);
 	} else {
 		TypeNmeaString(sentence, typeArray);
 		
@@ -329,7 +330,7 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);*/
 			speed = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
 			dtostrf(speed, sizeof(speedChar) - 1, 1, speedChar);
-			printf("Distance: %s\n", speedChar);
+			printf("Speed: %sm/s\n", speedChar);
 
 			DisplayLcd(speed, 0);
 		}
