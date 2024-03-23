@@ -177,6 +177,7 @@ int TypeNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pTypeArray) {
 		pSentence++;
 		pTypeArray++;
 	}
+	*pTypeArray = 0;
 	return 0;
 }
 
@@ -262,7 +263,6 @@ bool ValidateNmeaString(char sentence[NMEA_BYTE_BUFFER], char *pHexnum) {
 		pHexnum++;
 		*pHexnum = 0;
 		pHexnum -= 2;
-
 		for (uint_least8_t i = 0; i <= (strlen(pEnd)); ++i) {
 			if(*pEnd != *pHexnum) {
 				return 0;
@@ -305,12 +305,12 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 	char tempHexnum[4], typeArray[6], latitude[14], longitude[14], previousLatitude[14], previousLongitude[14], speedChar[2];
 	int loopCount;
 	float speed = 0;
+	TypeNmeaString(sentence, typeArray);
+
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
 		//puts("Nmea string is not valid\n");
 		//puts(sentence);
 	} else {
-		TypeNmeaString(sentence, typeArray);
-		
 		// check for type, call handlers, handlers parse and put into place, returns, 
 
 		if (strncmp(typeArray, "GPGGA", 5) == 0) {
@@ -330,14 +330,18 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);*/
 			speed = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
 			dtostrf(speed, sizeof(speedChar) - 1, 1, speedChar);
-			printf("Speed: %sm/s\n", speedChar);
+			//printf("Speed: %sm/s\n", speedChar);
 
 			DisplayLcd(speed, 0);
 		}
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
 		}
+		if (strncmp(typeArray, "GPGSV", 5) == 0) {
+			//puts(sentence);
+		}
 	}
+	
 
 	return 0;
 }
