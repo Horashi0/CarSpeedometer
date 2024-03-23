@@ -1,18 +1,27 @@
-upload0:
-	sudo pio run --target clean 
-	sudo pio run --target upload --verbose --upload-port /dev/ttyUSB0
-	sudo pio device monitor -p /dev/ttyUSB0
+DEV = ttyUSB0
 
-upload1:
-	sudo pio run --target clean
-	sudo pio run --target upload --verbose --upload-port /dev/ttyUSB1
-	sudo pio device monitor -p /dev/ttyUSB1
+ifeq (yes,$(VERBOSE))
+	ARGS += --verbose
+endif
 
-monitor0:
-	sudo pio device monitor -p /dev/ttyUSB0
+.PHONY: help
 
-monitor1:
-	sudo pio device monitor -p /dev/ttyUSB1
+help:
+	@echo "Usage: make [target] [VERBOSE=yes] [command]"
+	@echo ""
+	@echo "Targets:"
+	@echo "  DEV=target  "
+	@echo ""
+	@echo "Commands:"
+	@echo "  monitor  : View output of target"
+	@echo "  upload   : Upload to target"
 
-debug:
-	sudo pio device monitor -p /dev/ttyUSB0
+
+monitor:
+	pio device monitor -p /dev/$(DEV)
+
+upload-commands:
+	pio run --target clean
+	pio run --target upload --upload-port /dev/$(DEV) $(ARGS)
+
+upload: upload-commands monitor .NOTPARALLEL
