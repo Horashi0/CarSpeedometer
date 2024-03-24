@@ -1,6 +1,7 @@
 #pragma once
 
 //definitions of lengths
+#define GPGGA_STRING_LENGTH 80 // All NMEA strings are under 80 characters long
 #define GPGGA_ID_LENGTH 5 // All NMEA Id's are 5 characters long
 #define GPGGA_UTC_LENGTH 10 // UTC timestamps are all 10 characters long
 #define GPGGA_NORTH_SOUTH_LENGTH 1 // NorthSouth strings are all 1 character long
@@ -10,9 +11,10 @@
 #define GPGGA_CHECKSUM_LENGTH 2 // Checkusum is a 2 character long hexadecimal
 #define GPGGA_DGPS_AGE_LENGTH 4 // DgpsAge is in seconds so 4 is a sufficient length
 #define GPGGA_DGPS_STATION_ID_LENGTH 4 // Range 0000 to 4095
-
+#define GPGGA_VELOCITY_LENGTH 6 // Any velocity above 3 characters is highly unlikely
 typedef struct 
 {
+	char Sentence[GPGGA_STRING_LENGTH + 1];
 	char Id[GPGGA_ID_LENGTH+1]; // ID for NMEA string. e.g. GPGGA
 	char UtcTime[GPGGA_UTC_LENGTH + 1]; // UTC timestamp for NMEA string - Time in format ‘hhmmss.sss’ e.g. 135716.174
 	float Latitude; // Latitude for NMEA string - Latitude in format ‘ddmm.mmmm’ (degree and minutes)
@@ -33,4 +35,5 @@ typedef struct
 	char DgpsAge[GPGGA_DGPS_AGE_LENGTH + 1]; // Age of DGPS data in seconds, empty if DGPS is not used
 	char DgpsStationID[GPGGA_DGPS_STATION_ID_LENGTH + 1]; // DGPS station ID, empty if DGPS is not used
 	char CheckSum[GPGGA_CHECKSUM_LENGTH + 1]; // Hexadecimal checksum
+	float Velocity; // Velocity of user
 }GPGGA; 

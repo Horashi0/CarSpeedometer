@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+//#include <ncurses.h>
 
 #include "main.hpp"
 #include "GPGGA.h"
@@ -24,7 +25,6 @@ GPRMC *GprmcStruct;
 void setup() {
 	Serial.begin(9600);
 	lcd.begin(16,2);
-	
 
 	pinMode(rxPin, INPUT);
 	pinMode(txPin, OUTPUT);
@@ -33,17 +33,34 @@ void setup() {
 
 void loop() {
 	delay(1000);
-
 	ReceiveNmeaStrings(Sentence, MessagePos, GpsArray, GpggaStruct);
+
+	//DebugPrintout(GpggaStruct);
 }
 
+int DebugPrintout(GPGGA* gpggaStruct) {
+	char charVelocity[6], latitude[10], longitude[10], previousLatitude[10], previousLongitude[10];
 
+	/*dtostrf(gpggaStruct->Velocity, sizeof(charVelocity) - 1, 0, charVelocity);
+	dtostrf((double)gpggaStruct->DecimalDegreesLatitude, sizeof(latitude) - 1, 4, latitude);
+	dtostrf((double)gpggaStruct->DecimalDegreesLongitude, sizeof(longitude) - 1, 4, longitude);
+	dtostrf((double)gpggaStruct->PreviousDecimalDegreesLatitude, sizeof(previousLatitude) - 1, 4, previousLatitude);
+	dtostrf((double)gpggaStruct->PreviousDecimalDegreesLongitude, sizeof(previousLongitude) - 1, 4, previousLongitude);*/
+
+	//printf("Sentence: %s\n", gpggaStruct->Sentence);
+	//printf("Time: %s:  Lat %s:  Long %s:  Velocity: %s\n\n", gpggaStruct->UtcTime, latitude, longitude, charVelocity);
+
+	
+	
+	return 0;
+}
 
 int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], char tempHexnum[3], int loopCount, GPGGA* gpggaStruct) {
-	char* placeholder;
+	//char* placeholder;
 
-	gpggaStruct->PreviousDecimalDegreesLatitude = gpggaStruct->DecimalDegreesLatitude;
-	gpggaStruct->PreviousDecimalDegreesLongitude = gpggaStruct->DecimalDegreesLongitude;
+	//strncpy(gpggaStruct->Sentence, sentence, sizeof(gpggaStruct->Sentence));
+	/*gpggaStruct->PreviousDecimalDegreesLatitude = gpggaStruct->DecimalDegreesLatitude;
+	gpggaStruct->PreviousDecimalDegreesLongitude = gpggaStruct->DecimalDegreesLongitude;*/
 
 	ParseNmeaString(sentence, gpsArray, tempHexnum, &loopCount);
 
@@ -83,7 +100,7 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 	strncpy(gpggaStruct->DgpsAge, gpsArray[13].item, sizeof(gpggaStruct->DgpsAge));
 	strncpy(gpggaStruct->DgpsStationID, gpsArray[14].item, sizeof(gpggaStruct->DgpsStationID));
 	strncpy(gpggaStruct->CheckSum, gpsArray[15].item, sizeof(gpggaStruct->CheckSum));
-
+	
 	//Integer conversion then assignment to Structure member
 	sscanf(gpsArray[6].item, "%d", &integerPlaceholder);
 	gpggaStruct->FixStatus = integerPlaceholder;
@@ -101,10 +118,12 @@ int GpggaStructHandler(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[3
 	sscanf(gpsArray[11].item, "%f", &floatPlaceholder);
 	gpggaStruct->GeoID = floatPlaceholder;
 
-	ConvertDecimalDegrees(gpggaStruct->Latitude, gpggaStruct->Longitude, gpggaStruct->NorthSouth, gpggaStruct->EastWest, &pLatitude, &pLongitude);
+	//ConvertDecimalDegrees(gpggaStruct->Latitude, gpggaStruct->Longitude, gpggaStruct->NorthSouth, gpggaStruct->EastWest, &pLatitude, &pLongitude);
 	
-	gpggaStruct->DecimalDegreesLatitude = pLatitude;
-	gpggaStruct->DecimalDegreesLongitude = pLongitude;
+	//gpggaStruct->DecimalDegreesLatitude = pLatitude;
+	//gpggaStruct->DecimalDegreesLongitude = pLongitude;
+
+	//gpggaStruct->Velocity = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
 
 	return 0;
 }
@@ -285,8 +304,10 @@ int DisplayLcd(float speed, int choice) {
 	// speed is in meters per second
 	// choice means the function returns different speeds, kmph = 0, mph = 1
 	float kmph, mph;
-	char charSpeed[3];
-	dtostrf(speed, sizeof(charSpeed) - 1, 1, charSpeed);
+	char charSpeed[6];
+	int convertedSpeed;
+
+	snprintf(charSpeed, sizeof(charSpeed), "%d", (int)speed);
 
 	kmph = ((speed * 60) * 60) / 1000;
 	mph = kmph * 0.621371;
@@ -295,16 +316,16 @@ int DisplayLcd(float speed, int choice) {
 	lcd.print("Speed: ");
 	lcd.setCursor(7, 0);
 	lcd.print(charSpeed);
-	lcd.setCursor((strlen(charSpeed) + 6), 0);
+	lcd.setCursor((strlen(charSpeed) + 7), 0);
 	lcd.print("m/s");
 
 	return 0;
 }
 
 int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30], GPGGA *gpggaStruct) {
-	char tempHexnum[4], typeArray[6], latitude[14], longitude[14], previousLatitude[14], previousLongitude[14], speedChar[2];
+	char tempHexnum[4], typeArray[6], latitude[14], longitude[14], previousLatitude[14], previousLongitude[14], velocityChar[2];
 	int loopCount;
-	float speed = 0;
+	float velocity = 0;
 	TypeNmeaString(sentence, typeArray);
 
 	if (ValidateNmeaString(sentence, tempHexnum) == 0) {
@@ -314,26 +335,8 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 		// check for type, call handlers, handlers parse and put into place, returns, 
 
 		if (strncmp(typeArray, "GPGGA", 5) == 0) {
-			puts(sentence);
-
 			GpggaStructHandler(sentence, gpsArray, tempHexnum, loopCount, gpggaStruct);
-			
-			dtostrf((double)gpggaStruct->DecimalDegreesLatitude, sizeof(latitude) - 1, 4, latitude);
-			dtostrf((double)gpggaStruct->DecimalDegreesLongitude, sizeof(longitude) - 1, 4, longitude);
-			
-			dtostrf((double)gpggaStruct->PreviousDecimalDegreesLatitude, sizeof(previousLatitude) - 1, 4, previousLatitude);
-			dtostrf((double)gpggaStruct->PreviousDecimalDegreesLongitude, sizeof(previousLongitude) - 1, 4, previousLongitude);
-			
-			/*printf("DecimalDegreesLatitude: %s\n", latitude);
-			printf("DecimalDegreesLongitude: %s\n", longitude);
-			printf("PreviousDecimalDegreesLatitude: %s\n", previousLatitude);
-			printf("PreviousDecimalDegreesLongitude: %s\n\n", previousLongitude);*/
-			speed = CalculateDistance(gpggaStruct->DecimalDegreesLatitude, gpggaStruct->DecimalDegreesLongitude, gpggaStruct->PreviousDecimalDegreesLatitude, gpggaStruct->PreviousDecimalDegreesLongitude);
-			dtostrf(speed, sizeof(speedChar) - 1, 1, speedChar);
-			//printf("Speed: %sm/s\n", speedChar);
-
-			DisplayLcd(speed, 0);
-		}
+		} 
 		if (strncmp(typeArray, "GPRMC", 5) == 0) {
 			//puts(sentence);
 		}
@@ -342,7 +345,6 @@ int ProcessNmeaString(char sentence[NMEA_BYTE_BUFFER], GPS_TEXT_ITEM gpsArray[30
 		}
 	}
 	
-
 	return 0;
 }
 

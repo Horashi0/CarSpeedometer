@@ -2,6 +2,7 @@ DEV = ttyUSB0
 
 ifeq (yes,$(VERBOSE))
 	ARGS += --verbose
+
 endif
 
 .PHONY: help
